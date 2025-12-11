@@ -90,17 +90,19 @@ fn env_type_candidates(sig: &syn::Signature) -> Vec<syn::Ident> {
     out
 }
 
-/// Hybrid Env resolution:
-/// 1) If a parameter literally named `env` exists, use it.
-/// 2) Else, if exactly one parameter has type `Env` (by spelled name), use it.
-/// 3) Else, return None (caller may warn/error).
+/// Env resolution:
+///  1) The variable must have name `env`
+///  2) Its type has to be `Env` or `&Env` or `&soroban_sdk::Env`
+/// If no such variable is found, return None
+
 fn find_env_ident_hybrid(sig: &syn::Signature) -> Option<syn::Ident> {
     if let Some(id) = find_param_ident(sig, "env") {
-        return Some(id);
-    }
-    let cands = env_type_candidates(sig);
-    if cands.len() == 1 {
-        Some(cands[0].clone())
+        let cands = env_type_candidates(sig);
+        if cands.len() == 1 && cands[0] == id {
+            Ok(id)
+        } else {
+            None
+        }
     } else {
         None
     }
